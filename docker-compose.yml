@@ -1,0 +1,78 @@
+version: '3.3'
+services:
+  #------START BASIC CLOZE SERVICES------
+  spacy:
+    image: aolney/spacyapi:en_v2
+    # mapping 8001 on host to 80 in container; change to suit
+    ports:
+    - 8001:80
+    restart: unless-stopped
+  allennlp:
+    image: allennlp/demo:8bd9af0e71051a84454e7115ead1c963f10959bb
+    # mapping 8002 on host to 8000 in container; change to suit
+    ports:
+    - 8002:8000
+    restart: unless-stopped
+  #------END BASIC CLOZE SERVICES------
+  #------START PARAPHRASE SERVICES------
+  paraphrase:
+    image: aolney/paraphrase-service:1.0
+    # mapping 8002 on host to 8000 in container; change to suit
+    ports:
+    - 8004:8000
+    restart: unless-stopped
+  #------END PARAPHRASE SERVICES------
+  #------START ELABORATED FEEDBACK SERVICES------
+  wikifier:
+    image: aolney/illinois-wikifier-server:1.0
+    # mapping 8003 on host to 8800 in container; change to suit
+    ports:
+    - 8003:8800
+    restart: unless-stopped
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: es01
+    environment:
+      # Example parameters for an elasticsearch cluster
+      # - node.name=es01
+      # see https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html
+      # - cluster.name=es-docker-cluster
+      # - discovery.seed_hosts=es02,es03
+      # - cluster.initial_master_nodes=es01,es02,es03
+      # - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.type=single-node"
+    # ulimits:
+    #   memlock:
+    #     soft: -1
+    #     hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+    # exposing a port on the host seems to be the easiest way of getting data into the container
+      - 127.0.0.1:9200:9200 
+    networks:
+      - elastic
+    restart: unless-stopped
+  longform-qa:
+    depends_on: 
+    - es01
+    image: aolney/longform-qa-service:1.0
+    networks: 
+    - elastic
+    # mapping 8005 on host to 8000 in container; change to suit
+    ports: 
+    - 8005:8000
+    restart: unless-stopped
+volumes:
+  # data will be persisted if you "docker-compose down"
+  data01:
+    driver: local
+  # data02:
+  #   driver: local
+  # data03:
+  #   driver: local
+networks:
+  elastic:
+    driver: bridge
+#------END ELABORATED FEEDBACK SERVICES------
