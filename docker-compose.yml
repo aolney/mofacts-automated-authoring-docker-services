@@ -1,31 +1,37 @@
 version: '3.3'
 services:
   #------START BASIC CLOZE SERVICES------
+  # Exposed on port 8001 on host
   spacy:
     image: aolney/spacyapi:en_v2
-    # mapping 8001 on host to 80 in container; change to suit
     ports:
     - 8001:80
     restart: unless-stopped
+  # Exposed on port 8002 on host
   allennlp:
     image: allennlp/demo:8bd9af0e71051a84454e7115ead1c963f10959bb
-    # mapping 8002 on host to 8000 in container; change to suit
     ports:
     - 8002:8000
     restart: unless-stopped
+    # The volumes, etc below are necessary to control set_max_length and cache models. See README
+    volumes:
+    - type: bind
+      source: ./allennlp_cache
+      target: /root/.allennlp
+    command: --models-file /root/.allennlp/custom_models.json
   #------END BASIC CLOZE SERVICES------
   #------START PARAPHRASE SERVICES------
+  # Exposed on port 8004 on host
   paraphrase:
     image: aolney/paraphrase-service:1.0
-    # mapping 8002 on host to 8000 in container; change to suit
     ports:
     - 8004:8000
     restart: unless-stopped
   #------END PARAPHRASE SERVICES------
   #------START ELABORATED FEEDBACK SERVICES------
+  # Exposed on port 8003 on host
   wikifier:
     image: aolney/illinois-wikifier-server:1.0
-    # mapping 8003 on host to 8800 in container; change to suit
     ports:
     - 8003:8800
     restart: unless-stopped
@@ -54,13 +60,13 @@ services:
     networks:
       - elastic
     restart: unless-stopped
+  # Exposed on port 8005 on host
   longform-qa:
     depends_on: 
     - es01
-    image: aolney/longform-qa-service:1.0
+    image: aolney/longform-qa-service:2.0
     networks: 
     - elastic
-    # mapping 8005 on host to 8000 in container; change to suit
     ports: 
     - 8005:8000
     restart: unless-stopped
